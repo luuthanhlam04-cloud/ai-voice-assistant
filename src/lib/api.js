@@ -1,39 +1,19 @@
-// Gọi API Speech-to-Text chuyển đổi file âm thanh thành văn bản
-export async function transcribeAudio(audioBlob) {
-  const formData = new FormData();
-  // Khởi tạo tên file giả lập kèm định dạng webm mặc định của trình duyệt
-  formData.append('file', audioBlob, 'recording.webm');
+// src/lib/api.js
 
-  const response = await fetch('https://sl-form-ai.ript.vn/api/v1/openai/stt?language=vi', {
-    method: 'POST',
-    body: formData
-  });
+// ... giữ các hàm cũ (transcribeAudio, askAI)
 
-  if (!response.ok) throw new Error('Lỗi STT API');
-  const data = await response.json();
-  return data.result;
-}
+export const speakText = (text) => {
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    // Hủy các yêu cầu phát âm thanh trước đó để tránh chồng chéo
+    window.speechSynthesis.cancel();
 
-// Gọi API OpenAI Chat xử lý logic AI và phân tích cảm xúc
-export async function askAI(prompt) {
-  const systemContent = `Bạn là một trợ lý ảo thân thiện, ôn nhu. Đọc câu hỏi và thực hiện:
-1. Phân tích cảm xúc người dùng (Tích cực, Tiêu cực, Trung tính).
-2. Trả lời câu hỏi ngắn gọn.
-BẮT BUỘC trả về định dạng JSON: {"cam_xuc": "Nhãn", "cau_tra_loi": "Nội dung"}`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'vi-VN'; // Thiết lập tiếng Việt
+    utterance.rate = 1.0;     // Tốc độ nói
+    utterance.pitch = 1.0;    // Độ cao của giọng
 
-  const response = await fetch('https://sl-form-ai.ript.vn/api/v1/openai/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: prompt, system_content: systemContent })
-  });
-
-  if (!response.ok) throw new Error('Lỗi Chat API');
-  const data = await response.json();
-  
-  // Phân tích chuỗi JSON trả về từ AI
-  try {
-    return JSON.parse(data.result);
-  } catch (e) {
-    return { cam_xuc: "Trung tính", cau_tra_loi: data.result };
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.error("Trình duyệt không hỗ trợ Speech Synthesis");
   }
-}
+};
